@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Interrupt OS decision service
+
+Parameters:
+  ProviderSecretName:
+    Type: String
+    Default: interrupt-os/providers
+
+Resources:
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  DecisionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: interrupt-os-decision-service
+      Runtime: nodejs22.x
+      Architectures: [arm64]
+      Handler: index.handler
+      Role: !GetAtt FunctionRole.Arn
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          NODE_ENV: production
+          OPENAI_ROUTER_MODEL: gpt-6-luna
+          SERPAPI_KEY: !Sub "{{resolve:secretsmanager:${ProviderSecretName}:SecretString:SERPAPI_KEY}}"
+          OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:${ProviderSecretName}:SecretString:OPENAI_API_KEY}}"
+          TYPESAFE_API_KEY: !Sub "{{resolve:secretsmanager:${ProviderSecretName}:SecretString:TYPESAFE_API_KEY}}"
+          INSTALLATION_SIGNING_KEY: !Sub "{{resolve:secretsmanager:${ProviderSecretName}:SecretString:INSTALLATION_SIGNING_KEY}}"
+      Code:
+        ZipFile: |
+          exports.handler = async () => ({ statusCode: 503, body: "deployment pending" });
+
+  DecisionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/interrupt-os-decision-service
+      RetentionInDays: 14
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: interrupt-os-api
+      ProtocolType: HTTP
+
+  ApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt DecisionFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: $default
+      Target: !Sub integrations/${ApiIntegration}
+
+  DefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: $default
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DecisionFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*
+
+Outputs:
+  ApiUrl:
+    Value: !GetAtt HttpApi.ApiEndpoint
+  FunctionName:
+    Value: !Ref DecisionFunction
