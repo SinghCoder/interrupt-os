@@ -1,0 +1,20 @@
+{
+  "scenario": "travel-fare-inflated",
+  "fixturePackage": "chat.harpinderjots.fixture.air",
+  "receiver": "chat.harpinderjots.fixture.air/.FixtureReceiver",
+  "title": "Delhi to Udaipur at ₹10,159",
+  "body": "Book now for 2026-10-24. Limited seats on Air India.",
+  "liveBasis": {
+    "fetchedAt": "2026-10-10T13:40:17.151Z",
+    "route": "DEL-UDR",
+    "departureDate": "2026-10-24",
+    "currentPrice": 10159,
+    "priceLevel": "high",
+    "typicalPriceRange": [
+      6500,
+      7600
+    ],
+    "alternativeCount": 8,
+    "source": "SerpApi Google Flights"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "scenario": "travel-deal-exceptional",
+  "fixturePackage": "chat.harpinderjots.fixture.air",
+  "receiver": "chat.harpinderjots.fixture.air/.FixtureReceiver",
+  "title": "Frankfurt am Main weekend from ₹68,935",
+  "body": "Bengaluru (BLR) to Frankfurt am Main (FRA): 34% below the current average of ₹1,04,961.",
+  "liveBasis": {
+    "fetchedAt": "2026-10-10T13:41:30.182Z",
+    "origin": "BLR",
+    "destination": "FRA",
+    "destinationName": "Frankfurt am Main",
+    "currentPrice": 68935,
+    "averagePrice": 104961,
+    "discountPercentage": 34,
+    "airline": "Lufthansa",
+    "source": "SerpApi Google Flights Deals"
+  }
+}

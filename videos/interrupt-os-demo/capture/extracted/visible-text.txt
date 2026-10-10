@@ -1,0 +1,30 @@
+Interrupt OS
+
+Every notification should earn the right to interrupt.
+
+The film opens with a live travel fare that fails current-market verification, followed
+by a genuine exceptional fare that earns an alert. It then shows preference feedback,
+critical pass-through, the real Android application, the agentic evidence pipeline,
+and the runtime QA harness.
+
+Product language from the application:
+- Working quietly
+- Checked
+- Kept quiet
+- Action needed
+- Should alert
+- Keep quiet next time
+- Current evidence
+- Recent decisions
+
+Decision actions:
+- preserve
+- hold
+- replace silently
+- replace with an alert
+
+Evidence providers:
+- SerpApi Google Shopping
+- SerpApi Google Product
+- SerpApi Google Flights
+- SerpApi Google Flights Deals

@@ -1,0 +1,17 @@
+{
+  "scenario": "travel-upcoming",
+  "fixturePackage": "chat.harpinderjots.fixture.air",
+  "receiver": "chat.harpinderjots.fixture.air/.FixtureReceiver",
+  "title": "AI 2981 departs at 9:00 PM today",
+  "body": "Your booked Delhi (DEL) to Mumbai (BOM) flight is scheduled in under two hours. Open your boarding pass.",
+  "liveBasis": {
+    "fetchedAt": "2026-10-10T13:48:00.000Z",
+    "route": "DEL-BOM",
+    "departureDate": "2026-10-10",
+    "airline": "Air India",
+    "flightNumber": "AI 2981",
+    "scheduledDeparture": "2026-10-10 21:00",
+    "currentAlternativeCount": 6,
+    "source": "SerpApi Google Flights"
+  }
+}

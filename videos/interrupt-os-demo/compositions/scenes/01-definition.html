@@ -1,0 +1,19 @@
+<!doctype html><html><body><template>
+  <div id="root" class="scene-root" data-composition-id="scene-01" data-width="1920" data-height="1080">
+    <div class="brand"><span class="brand-dot"></span>Interrupt OS</div><div class="status">Android attention layer</div>
+    <div class="copy"><div id="s1-eye" class="eyebrow">Every app asks. One layer decides.</div><h1 id="s1-title">Which notifications are actually worth <span class="accent">interrupting you?</span></h1>
+      <div id="s1-def" class="definition"><b>✓</b>A decision layer for Android notifications</div>
+      <div class="mini-flow"><div class="mini-card s1-mini">Messages</div><span class="mini-arrow">→</span><div class="mini-card s1-mini">Travel</div><span class="mini-arrow">→</span><div class="mini-card s1-mini">Commerce</div><span class="mini-arrow">→</span><div class="mini-card s1-gate">Interrupt OS</div></div>
+    </div><div class="scene-time">00:00 · product definition</div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo("#s1-eye",{opacity:0,y:14},{opacity:1,y:0,duration:.45,ease:"power2.out"},.2)
+      .fromTo("#s1-title",{opacity:0,y:28},{opacity:1,y:0,duration:.75,ease:"power3.out"},.45)
+      .fromTo("#s1-def",{opacity:0,x:30},{opacity:1,x:0,duration:.55,ease:"power2.out"},2.7)
+      .fromTo(".s1-mini",{opacity:0,y:18},{opacity:1,y:0,duration:.35,stagger:.35,ease:"power2.out"},4.0)
+      .fromTo(".mini-arrow",{opacity:0},{opacity:1,duration:.25,stagger:.35},4.15)
+      .fromTo(".s1-gate",{opacity:0,scale:.88},{opacity:1,scale:1,duration:.5,ease:"back.out(1.4)"},5.3);
+    window.__timelines=window.__timelines||{};window.__timelines["scene-01"]=tl;
+  </script>
+</template></body></html>

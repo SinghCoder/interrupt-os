@@ -1,0 +1,17 @@
+<!doctype html><html><body><template>
+  <div id="root" class="scene-root" data-composition-id="scene-03" data-width="1920" data-height="1080">
+    <div class="brand"><span class="brand-dot"></span>Interrupt OS</div><div class="status">SerpApi · checked now</div>
+    <div class="copy"><div id="s3-eye" class="eyebrow">Live web evidence</div><h2 id="s3-title">The claim does not survive the search.</h2>
+      <div class="evidence-grid"><div class="evidence s3-fact"><span>Current alternatives</span><strong>15 flights</strong></div><div class="evidence s3-fact"><span>Current fare</span><strong>₹9,950</strong></div><div class="evidence s3-fact"><span>Typical range</span><strong>₹5,600–₹6,900</strong></div><div class="evidence s3-fact"><span>Scarcity signal</span><strong>None</strong></div></div>
+      <div id="s3-decision" class="decision"><b>✓</b>Keep quiet · urgency not earned</div>
+    </div><div class="scene-time">00:20 · live evidence returned</div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo("#s3-eye",{opacity:0,y:12},{opacity:1,y:0,duration:.4},.15)
+      .fromTo("#s3-title",{opacity:0,y:22},{opacity:1,y:0,duration:.6,ease:"power3.out"},.45)
+      .fromTo(".s3-fact",{opacity:0,y:22},{opacity:1,y:0,duration:.5,stagger:2.1,ease:"power2.out"},3.1)
+      .fromTo("#s3-decision",{opacity:0,scale:.88},{opacity:1,scale:1,duration:.55,ease:"back.out(1.4)"},13.8);
+    window.__timelines=window.__timelines||{};window.__timelines["scene-03"]=tl;
+  </script>
+</template></body></html>

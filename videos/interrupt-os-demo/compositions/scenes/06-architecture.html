@@ -1,0 +1,30 @@
+<!doctype html><html><body><template>
+  <div id="root" class="scene-root" data-composition-id="scene-06" data-width="1920" data-height="1080">
+    <div class="brand"><span class="brand-dot"></span>Interrupt OS</div><div class="status">one notification · full runtime loop</div>
+    <div class="arch-copy"><div id="s6-eye" class="eyebrow">Technical architecture</div><h2 id="s6-title">From interruption claim to evidence-backed action.</h2></div>
+    <div class="arch-map">
+      <svg class="arch-lines" viewBox="0 0 1220 650"><path d="M330 66 H400 M730 66 H800 M965 132 V270 M800 336 H730 M400 336 H330"/><path d="M565 402 V480" stroke-dasharray="10 10"/><circle id="s6-pulse" class="pulse" cx="0" cy="66" r="9"/></svg>
+      <div id="s6-n1" class="arch-node n1"><b>01 · ANDROID</b><strong>Notification capture</strong><span>App, text, urgency, and device context</span></div>
+      <div id="s6-n2" class="arch-node n2"><b>02 · MODEL</b><strong>Evidence plan</strong><span>Decides what must be checked</span></div>
+      <div id="s6-n3" class="arch-node n3 serp"><b>03 · SERP API</b><strong>Live web search</strong><span>Flights, prices, merchants, and places now</span></div>
+      <div id="s6-n4" class="arch-node n4"><b>04 · EVIDENCE</b><strong>Structured bundle</strong><span>Facts, sources, freshness, and confidence</span></div>
+      <div id="s6-n5" class="arch-node n5"><b>05 · POLICY</b><strong>Attention decision</strong><span>Evidence + context + personal feedback</span></div>
+      <div id="s6-n6" class="arch-node n6 action"><b>06 · ACTION</b><strong>Suppress or deliver</strong><span>Android executes the decision</span></div>
+      <div id="s6-feedback" class="feedback-loop">↺ User feedback returns to the policy</div>
+    </div><div class="scene-time">00:54 · runtime architecture</div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo("#s6-eye",{opacity:0,y:12},{opacity:1,y:0,duration:.35},.1)
+      .fromTo("#s6-title",{opacity:0,y:18},{opacity:1,y:0,duration:.5,ease:"power3.out"},.35)
+      .fromTo("#s6-n1",{opacity:0,scale:.9},{opacity:1,scale:1,duration:.4,ease:"back.out(1.3)"},1.4)
+      .fromTo("#s6-n2",{opacity:0,scale:.9},{opacity:1,scale:1,duration:.4,ease:"back.out(1.3)"},3.6)
+      .fromTo("#s6-n3",{opacity:0,scale:.9},{opacity:1,scale:1,duration:.4,ease:"back.out(1.3)"},6.2)
+      .fromTo("#s6-n4",{opacity:0,scale:.9},{opacity:1,scale:1,duration:.4,ease:"back.out(1.3)"},9.3)
+      .fromTo("#s6-n5",{opacity:0,scale:.9},{opacity:1,scale:1,duration:.4,ease:"back.out(1.3)"},11.5)
+      .fromTo("#s6-n6",{opacity:0,scale:.9},{opacity:1,scale:1,duration:.4,ease:"back.out(1.3)"},14.2)
+      .fromTo("#s6-feedback",{opacity:0,y:12},{opacity:1,y:0,duration:.4},15.1)
+      .to("#s6-pulse",{keyframes:[{x:365,duration:2.1,ease:"none"},{x:765,duration:2.5,ease:"none"},{x:965,y:270,duration:3,ease:"none"},{x:565,y:270,duration:2.2,ease:"none"},{x:165,y:270,duration:2.6,ease:"none"}],ease:"none"},1.6);
+    window.__timelines=window.__timelines||{};window.__timelines["scene-06"]=tl;
+  </script>
+</template></body></html>

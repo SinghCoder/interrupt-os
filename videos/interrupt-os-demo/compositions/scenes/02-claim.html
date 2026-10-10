@@ -1,0 +1,17 @@
+<!doctype html><html><body><template>
+  <div id="root" class="scene-root" data-composition-id="scene-02" data-width="1920" data-height="1080">
+    <div class="brand"><span class="brand-dot"></span>Interrupt OS</div><div class="status">claim intercepted</div>
+    <div class="copy"><div id="s2-eye" class="eyebrow">The notification makes a claim</div><h2 id="s2-title">Urgency is not evidence.</h2>
+      <div id="s2-card" class="claim-card"><small>Travel alert · now</small><strong>Book now. Limited seats.</strong><span>Interrupt OS pauses delivery before the alert reaches you.</span></div>
+      <div id="s2-question" class="question"><i>?</i>What would prove this claim?</div>
+    </div><div class="scene-time">00:09 · claim becomes a question</div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo("#s2-eye",{opacity:0,y:12},{opacity:1,y:0,duration:.4},.15)
+      .fromTo("#s2-title",{opacity:0,y:24},{opacity:1,y:0,duration:.6,ease:"power3.out"},.4)
+      .fromTo("#s2-card",{opacity:0,x:55},{opacity:1,x:0,duration:.65,ease:"power3.out"},2.15)
+      .fromTo("#s2-question",{opacity:0,scale:.9},{opacity:1,scale:1,duration:.5,ease:"back.out(1.35)"},6.8);
+    window.__timelines=window.__timelines||{};window.__timelines["scene-02"]=tl;
+  </script>
+</template></body></html>

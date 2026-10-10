@@ -1,0 +1,17 @@
+<!doctype html><html><body><template>
+  <div id="root" class="scene-root dark" data-composition-id="scene-05" data-width="1920" data-height="1080">
+    <div class="brand"><span class="brand-dot"></span>Interrupt OS</div><div class="status">interruption earned</div>
+    <div class="copy"><div id="s5-eye" class="eyebrow">Consequence changes the answer</div><h1 id="s5-title">Booked flight.<br><span class="accent">Leaving soon.</span></h1>
+      <p id="s5-copy" style="margin-top:26px">This one reaches you immediately.</p>
+      <div class="pass-path"><div class="pass-pill s5-step">Evidence</div><span class="pass-arrow">→</span><div class="pass-pill s5-step">Real consequence</div><span class="pass-arrow">→</span><div class="pass-pill final s5-step">Deliver now</div></div>
+    </div><div class="scene-time">00:47 · pass through</div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo("#s5-eye",{opacity:0,y:12},{opacity:1,y:0,duration:.35},.1)
+      .fromTo("#s5-title",{opacity:0,y:25},{opacity:1,y:0,duration:.55,ease:"power3.out"},.35)
+      .fromTo("#s5-copy",{opacity:0},{opacity:1,duration:.35},2.0)
+      .fromTo(".s5-step",{opacity:0,x:22},{opacity:1,x:0,duration:.38,stagger:.55,ease:"power2.out"},2.55);
+    window.__timelines=window.__timelines||{};window.__timelines["scene-05"]=tl;
+  </script>
+</template></body></html>

@@ -88,9 +88,11 @@ async function commerce(kind) {
   const historyClaim = offer.historicalMedian && offer.decrease > 0
     ? `${Math.round(offer.decrease * 100)}% below its recorded historical midpoint`
     : `the lowest of ${sorted.length} current verified merchant offers`;
-  const title = `${details.title} at ${inr.format(offer.extracted_price)}`;
+  const title = kind === "drop"
+    ? `Price watch: ${details.title} at ${inr.format(offer.extracted_price)}`
+    : `${details.title} at ${inr.format(offer.extracted_price)}`;
   const body = kind === "drop"
-    ? `${offer.name}: ${historyClaim}. Offer available now.`
+    ? `Your saved item at ${offer.name} is ${historyClaim}. Offer available now.`
     : `${offer.name}: currently listed at ${inr.format(offer.extracted_price)}.`;
   return {
     scenario: kind === "drop" && offer.decrease > 0 ? "commerce-historical-advantage" : `commerce-${kind === "drop" ? "current-advantage" : "ordinary"}`,
@@ -186,13 +188,78 @@ async function travel(kind) {
   };
 }
 
+async function travelDeal(kind) {
+  if (kind === "exceptional") {
+    const seed = await modelJson(
+      "flight_deal_origin",
+      "Choose one major Indian departure airport for a weekend flight-deal search. Vary the city across runs. Return a valid IATA code and normal city name.",
+      { currentDate: new Date().toISOString().slice(0, 10) },
+      { type: "object", additionalProperties: false, properties: { origin: { type: "string" }, city: { type: "string" } }, required: ["origin", "city"] },
+    );
+    const deals = await serp({ engine: "google_flights_deals", departure_id: seed.origin, type: "1", travel_duration: "2", stops: "1", currency: "INR", gl: "in", hl: "en" });
+    const candidates = (deals.deals ?? []).filter((deal) => deal.price && deal.average_price && deal.discount_percentage && deal.arrival_airport_code);
+    if (!candidates.length) throw new Error("No current flight deal with comparative evidence was found");
+    const deal = [...candidates].sort((a, b) => b.discount_percentage - a.discount_percentage)[0];
+    return {
+      scenario: "travel-deal-exceptional",
+      fixturePackage: "chat.harpinderjots.fixture.air",
+      receiver: "chat.harpinderjots.fixture.air/.FixtureReceiver",
+      title: `Price watch: ${deal.name} from ${inr.format(deal.price)}`,
+      body: `Your saved ${seed.city} (${seed.origin}) to ${deal.name} (${deal.arrival_airport_code}) trip is now ${Math.round(deal.discount_percentage)}% below the current average of ${inr.format(deal.average_price)}.`,
+      liveBasis: {
+        fetchedAt: new Date().toISOString(), origin: seed.origin, destination: deal.arrival_airport_code,
+        destinationName: deal.name, currentPrice: deal.price, averagePrice: deal.average_price,
+        discountPercentage: deal.discount_percentage, airline: deal.airline,
+        source: "SerpApi Google Flights Deals",
+      },
+    };
+  }
+
+  const today = new Date();
+  const earliest = new Date(today.getTime() + 10 * 86_400_000).toISOString().slice(0, 10);
+  const latest = new Date(today.getTime() + 24 * 86_400_000).toISOString().slice(0, 10);
+  const seeds = await modelJson(
+    "high_fare_candidates",
+    "Return five varied Indian domestic nonstop route candidates and dates inside the supplied range. Use major and mid-size airports, valid IATA codes, normal city names, and different routes. Do not predict which fare will be high.",
+    { earliest, latest },
+    { type: "object", additionalProperties: false, properties: { routes: { type: "array", minItems: 5, maxItems: 5, items: { type: "object", additionalProperties: false, properties: { from: { type: "string" }, to: { type: "string" }, fromName: { type: "string" }, toName: { type: "string" }, departureDate: { type: "string" } }, required: ["from", "to", "fromName", "toName", "departureDate"] } } }, required: ["routes"] },
+  );
+  const inflated = [];
+  for (const route of seeds.routes) {
+    const result = await serp({ engine: "google_flights", departure_id: route.from, arrival_id: route.to, outbound_date: route.departureDate, type: "2", currency: "INR", hl: "en" });
+    if (result.price_insights?.price_level !== "high" || !result.price_insights.lowest_price) continue;
+    const itinerary = [...(result.best_flights ?? []), ...(result.other_flights ?? [])].find((option) => option.price);
+    if (!itinerary) continue;
+    const typical = result.price_insights.typical_price_range ?? [];
+    inflated.push({ route, result, itinerary, typical, ratio: itinerary.price / (typical[1] ?? result.price_insights.lowest_price) });
+  }
+  const winner = inflated.sort((a, b) => b.ratio - a.ratio)[0];
+  if (!winner) throw new Error("No current route with a high fare was found");
+  const { route, result, itinerary, typical } = winner;
+  return {
+    scenario: "travel-fare-inflated",
+    fixturePackage: "chat.harpinderjots.fixture.air",
+    receiver: "chat.harpinderjots.fixture.air/.FixtureReceiver",
+    title: `${route.fromName} to ${route.toName} at ${inr.format(itinerary.price)}`,
+    body: `Book now for ${route.departureDate}. Limited seats on ${itinerary.flights?.[0]?.airline ?? "this route"}.`,
+    liveBasis: {
+      fetchedAt: new Date().toISOString(), route: `${route.from}-${route.to}`, departureDate: route.departureDate,
+      currentPrice: itinerary.price, priceLevel: result.price_insights.price_level,
+      typicalPriceRange: typical, alternativeCount: [...(result.best_flights ?? []), ...(result.other_flights ?? [])].length,
+      source: "SerpApi Google Flights",
+    },
+  };
+}
+
 const payload = postLatest
   ? JSON.parse(await readFile("qa/output/latest-scenario.json", "utf8"))
   : scenario === "commerce-drop" ? await commerce("drop")
     : scenario === "commerce-ordinary" ? await commerce("ordinary")
+      : scenario === "travel-deal-exceptional" ? await travelDeal("exceptional")
+        : scenario === "travel-fare-inflated" ? await travelDeal("inflated")
       : scenario === "travel-urgent" ? await travel("urgent")
         : scenario === "travel-routine" ? await travel("routine")
-          : (() => { throw new Error("Scenario must be commerce-drop, commerce-ordinary, travel-urgent, or travel-routine"); })();
+          : (() => { throw new Error("Scenario must be commerce-drop, commerce-ordinary, travel-deal-exceptional, travel-fare-inflated, travel-urgent, or travel-routine"); })();
 
 await mkdir("qa/output", { recursive: true });
 await writeFile("qa/output/latest-scenario.json", `${JSON.stringify(payload, null, 2)}\n`);
