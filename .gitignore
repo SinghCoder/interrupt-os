@@ -1,0 +1,16 @@
+.DS_Store
+.gradle/
+.idea/
+local.properties
+**/build/
+*.iml
+.env
+.env.*
+!.env.example
+backend/node_modules/
+backend/dist/
+backend/.aws-sam/
+backend/coverage/
+*.keystore
+*.jks
+
