@@ -19,6 +19,35 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: FeedbackTableAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                Resource: !GetAtt FeedbackTable.Arn
+
+  FeedbackTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: interrupt-os-feedback
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: installationId
+          AttributeType: S
+        - AttributeName: feedbackKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: installationId
+          KeyType: HASH
+        - AttributeName: feedbackKey
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAtEpoch
+        Enabled: true
 
   DecisionFunction:
     Type: AWS::Lambda::Function
@@ -38,6 +67,7 @@ Resources:
           OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:${ProviderSecretName}:SecretString:OPENAI_API_KEY}}"
           TYPESAFE_API_KEY: !Sub "{{resolve:secretsmanager:${ProviderSecretName}:SecretString:TYPESAFE_API_KEY}}"
           INSTALLATION_SIGNING_KEY: !Sub "{{resolve:secretsmanager:${ProviderSecretName}:SecretString:INSTALLATION_SIGNING_KEY}}"
+          FEEDBACK_TABLE_NAME: !Ref FeedbackTable
       Code:
         ZipFile: |
           exports.handler = async () => ({ statusCode: 503, body: "deployment pending" });

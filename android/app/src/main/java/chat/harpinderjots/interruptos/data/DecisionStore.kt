@@ -37,6 +37,32 @@ object DecisionStore {
         SecureValueStore.remove(context, PREFS, KEY)
     }
 
+    @Synchronized
+    fun recordFeedback(decisionId: String, feedback: DecisionFeedback, synced: Boolean = false): DecisionRecord? {
+        if (!::context.isInitialized) return null
+        var updatedRecord: DecisionRecord? = null
+        val updated = mutableDecisions.value.map { record ->
+            if (record.id == decisionId) record.copy(feedback = feedback, feedbackSynced = synced).also { updatedRecord = it } else record
+        }
+        mutableDecisions.value = updated
+        write(updated)
+        return updatedRecord
+    }
+
+    @Synchronized
+    fun markFeedbackSynced(decisionId: String) {
+        if (!::context.isInitialized) return
+        val updated = mutableDecisions.value.map { record ->
+            if (record.id == decisionId) record.copy(feedbackSynced = true) else record
+        }
+        mutableDecisions.value = updated
+        write(updated)
+    }
+
+    fun find(decisionId: String): DecisionRecord? = mutableDecisions.value.firstOrNull { it.id == decisionId }
+
+    fun snapshot(): List<DecisionRecord> = mutableDecisions.value
+
     private fun read(): List<DecisionRecord> = runCatching {
         val raw = SecureValueStore.get(context, PREFS, KEY) ?: "[]"
         val array = JSONArray(raw)
@@ -57,6 +83,7 @@ object DecisionStore {
         put("body", body)
         put("action", action.name)
         put("reason", reason)
+        put("summary", summary)
         put("confidence", confidence)
         put("createdAt", createdAt)
         put("latencyMs", latencyMs)
@@ -67,6 +94,9 @@ object DecisionStore {
                 put("source", item.source)
             }
         }))
+        put("reviewRecommended", reviewRecommended)
+        put("feedback", feedback?.name)
+        put("feedbackSynced", feedbackSynced)
     }
 
     private fun JSONObject.toRecord(): DecisionRecord {
@@ -80,6 +110,7 @@ object DecisionStore {
             body = getString("body"),
             action = DecisionAction.valueOf(getString("action")),
             reason = getString("reason"),
+            summary = optString("summary", getString("reason")),
             confidence = getDouble("confidence"),
             createdAt = getLong("createdAt"),
             latencyMs = getLong("latencyMs"),
@@ -88,6 +119,9 @@ object DecisionStore {
                     EvidenceItem(it.getString("label"), it.getString("detail"), it.optString("source").ifBlank { null })
                 }
             },
+            reviewRecommended = optBoolean("reviewRecommended", false),
+            feedback = optString("feedback").takeIf { it.isNotBlank() }?.let(DecisionFeedback::valueOf),
+            feedbackSynced = optBoolean("feedbackSynced", false),
         )
     }
 }

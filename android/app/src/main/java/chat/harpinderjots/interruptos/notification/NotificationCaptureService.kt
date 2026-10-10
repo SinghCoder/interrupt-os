@@ -59,16 +59,12 @@ class NotificationCaptureService : NotificationListenerService() {
                 }
                 DecisionStore.add(effectiveDecision)
                 when (effectiveDecision.action) {
-                    DecisionAction.HELD -> Unit
-                    DecisionAction.REPLACED_SILENT,
-                    DecisionAction.REPLACED_ALERTING -> {
-                        ReplacementNotifier.notify(this, effectiveDecision, original.contentIntent)
-                    }
+                    DecisionAction.HELD,
+                    DecisionAction.REPLACED_SILENT -> ReplacementNotifier.refreshReviewRecap(this)
+                    DecisionAction.REPLACED_ALERTING -> ReplacementNotifier.notify(this, effectiveDecision, original.contentIntent)
                     DecisionAction.PRESERVED -> ReplacementNotifier.deliverOriginal(
                         this,
-                        envelope.sourceLabel,
-                        envelope.title,
-                        envelope.body,
+                        effectiveDecision,
                         original.contentIntent,
                     )
                     else -> Unit
@@ -83,6 +79,7 @@ class NotificationCaptureService : NotificationListenerService() {
                     body = envelope.body,
                     action = DecisionAction.FAILED,
                     reason = "Delivered unchanged because verification could not be completed.",
+                    summary = "Delivered unchanged because verification was unavailable.",
                     confidence = 0.0,
                     createdAt = System.currentTimeMillis(),
                     latencyMs = System.currentTimeMillis() - envelope.postedAt,
@@ -91,9 +88,7 @@ class NotificationCaptureService : NotificationListenerService() {
                 DecisionStore.add(failed)
                 ReplacementNotifier.deliverOriginal(
                     this,
-                    envelope.sourceLabel,
-                    envelope.title,
-                    envelope.body,
+                    failed,
                     original.contentIntent,
                 )
             } finally {

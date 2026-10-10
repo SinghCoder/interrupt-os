@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
-    "build": "esbuild src/lambda.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs",
+    "build": "esbuild src/lambda.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/index.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "qa:scenario": "node qa/live-scenario.mjs"
@@ -14,9 +14,14 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",
     "@types/node": "^24.7.2",
-    "esbuild": "^0.25.10",
+    "esbuild": "^0.28.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vite": "^7.1.12",
+    "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1149.0",
+    "@aws-sdk/lib-dynamodb": "^3.1149.0"
   }
 }

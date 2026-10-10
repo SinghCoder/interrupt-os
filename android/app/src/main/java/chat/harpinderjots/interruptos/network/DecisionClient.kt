@@ -4,6 +4,7 @@ import android.content.Context
 import chat.harpinderjots.interruptos.BuildConfig
 import chat.harpinderjots.interruptos.data.DecisionAction
 import chat.harpinderjots.interruptos.data.DecisionRecord
+import chat.harpinderjots.interruptos.data.DecisionFeedback
 import chat.harpinderjots.interruptos.data.EvidenceItem
 import chat.harpinderjots.interruptos.security.SecureValueStore
 import org.json.JSONObject
@@ -78,11 +79,53 @@ class DecisionClient(
                 else -> DecisionAction.PRESERVED
             },
             reason = json.getString("reason"),
+            summary = json.optString("summary", json.getString("reason")),
             confidence = json.optDouble("confidence", 0.0),
             createdAt = System.currentTimeMillis(),
             latencyMs = json.optLong("latencyMs", System.currentTimeMillis() - started),
             evidence = evidence,
+            reviewRecommended = json.optBoolean("reviewRecommended", false),
         )
+    }
+
+    fun submitFeedback(decision: DecisionRecord, feedback: DecisionFeedback) {
+        val connection = URL("${baseUrl.trimEnd('/')}/v1/feedback").openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 2_500
+        connection.readTimeout = 5_000
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Authorization", "Bearer ${installationToken()}")
+        connection.outputStream.bufferedWriter().use { writer ->
+            writer.write(JSONObject().apply {
+                put("feedbackId", UUID.randomUUID().toString())
+                put("decisionId", decision.id)
+                put("domain", decision.domain)
+                put("sourcePackage", decision.sourcePackage)
+                put("sourceLabel", decision.sourceLabel)
+                put("title", decision.title)
+                put("body", decision.body)
+                put("originalAction", when (decision.action) {
+                    DecisionAction.HELD -> "hold"
+                    DecisionAction.REPLACED_SILENT -> "replace_silent"
+                    DecisionAction.REPLACED_ALERTING -> "replace_alerting"
+                    else -> "preserve"
+                })
+                put("reason", decision.reason)
+                put("correction", when (feedback) {
+                    DecisionFeedback.CORRECT -> "correct"
+                    DecisionFeedback.SHOULD_INTERRUPT -> "should_interrupt"
+                    DecisionFeedback.SHOULD_STAY_QUIET -> "should_stay_quiet"
+                })
+                put("createdAt", System.currentTimeMillis())
+            }.toString())
+        }
+        val responseCode = connection.responseCode
+        if (responseCode !in 200..299) {
+            val message = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            error("Feedback API returned $responseCode: $message")
+        }
+        connection.inputStream.close()
     }
 
     private fun installationToken(): String {

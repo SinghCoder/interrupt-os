@@ -26,19 +26,22 @@ export function createInstallationToken(): { installationId: string; token: stri
 }
 
 export function verifyInstallationToken(header: string | undefined): boolean {
-  if (!header?.startsWith("Bearer ")) return false;
+  return installationIdFromToken(header) !== null;
+}
+
+export function installationIdFromToken(header: string | undefined): string | null {
+  if (!header?.startsWith("Bearer ")) return null;
   const token = header.slice("Bearer ".length);
   const [payload, supplied] = token.split(".");
-  if (!payload || !supplied) return false;
+  if (!payload || !supplied) return null;
   const expected = signature(payload);
   const suppliedBuffer = Buffer.from(supplied);
   const expectedBuffer = Buffer.from(expected);
-  if (suppliedBuffer.length !== expectedBuffer.length || !timingSafeEqual(suppliedBuffer, expectedBuffer)) return false;
+  if (suppliedBuffer.length !== expectedBuffer.length || !timingSafeEqual(suppliedBuffer, expectedBuffer)) return null;
   try {
     const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as InstallationClaims;
-    return typeof claims.sub === "string" && claims.exp > Math.floor(Date.now() / 1000);
+    return typeof claims.sub === "string" && claims.exp > Math.floor(Date.now() / 1000) ? claims.sub : null;
   } catch {
-    return false;
+    return null;
   }
 }
-

@@ -35,5 +35,9 @@
                 android:name="android.service.notification.default_filter_types"
                 android:value="alerting|silent" />
         </service>
+
+        <receiver
+            android:name=".notification.FeedbackReceiver"
+            android:exported="false" />
     </application>
 </manifest>

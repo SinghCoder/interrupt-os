@@ -60,8 +60,8 @@ npm test
 npm run build
 
 artifact_dir="$(mktemp -d /tmp/interrupt-os-lambda.XXXXXX)"
-cp dist/index.mjs "$artifact_dir/index.mjs"
-(cd "$artifact_dir" && zip -q function.zip index.mjs)
+cp dist/index.js "$artifact_dir/index.js"
+(cd "$artifact_dir" && zip -q function.zip index.js)
 
 aws cloudformation deploy \
   --template-file infrastructure/template.yaml \

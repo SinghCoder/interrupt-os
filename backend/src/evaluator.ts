@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { judgeEvidence, planEvidence } from "./providers/openai.js";
 import { collectEvidence, type SearchEvidence } from "./providers/serpapi.js";
+import { recentFeedback } from "./feedback.js";
 import { routeWithTypeSafe } from "./providers/typesafe.js";
 import type { DecisionResponse, EvidencePlan, NotificationEvent, RouteDecision } from "./types.js";
 
-export async function evaluate(event: NotificationEvent): Promise<DecisionResponse> {
+export async function evaluate(event: NotificationEvent, installationId?: string): Promise<DecisionResponse> {
   const started = Date.now();
   validateEvent(event);
 
@@ -40,7 +41,8 @@ export async function evaluate(event: NotificationEvent): Promise<DecisionRespon
   }
 
   try {
-    const judgment = await judgeEvidence(event, route, evidence);
+    const preferences = installationId ? await recentFeedback(installationId).catch(() => []) : [];
+    const judgment = await judgeEvidence(event, route, evidence, preferences);
     return response(
       started,
       judgment.action,
@@ -49,8 +51,14 @@ export async function evaluate(event: NotificationEvent): Promise<DecisionRespon
       judgment.reason,
       evidence.items,
       { router: route.provider, planner: "openai", search: evidence.provider },
+      judgment.summary,
+      judgment.reviewRecommended,
     );
-  } catch {
+  } catch (error) {
+    console.warn("evidence_judgment_failed", {
+      domain: route.domain,
+      error: error instanceof Error ? error.message : "unknown",
+    });
     return response(started, "preserve", route.domain, Math.min(route.domainConfidence, 0.6), "Delivered unchanged because a reliable decision could not be completed.", evidence.items, { router: route.provider, planner: "openai", search: evidence.provider });
   }
 }
@@ -68,6 +76,8 @@ function response(
   reason: string,
   evidence: DecisionResponse["evidence"],
   providerTrace: DecisionResponse["providerTrace"],
+  summary = reason,
+  reviewRecommended = false,
 ): DecisionResponse {
   const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
   return {
@@ -76,6 +86,8 @@ function response(
     domain,
     confidence,
     reason,
+    summary,
+    reviewRecommended,
     evidence,
     latencyMs: Date.now() - started,
     expiresAt,

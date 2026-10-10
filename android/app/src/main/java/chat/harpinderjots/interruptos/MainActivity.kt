@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import chat.harpinderjots.interruptos.data.DecisionStore
+import chat.harpinderjots.interruptos.data.FeedbackManager
 import chat.harpinderjots.interruptos.notification.NotificationCaptureService
 import chat.harpinderjots.interruptos.ui.InterruptOsApp
 import chat.harpinderjots.interruptos.ui.theme.InterruptOsTheme
@@ -22,6 +23,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         DecisionStore.initialize(applicationContext)
+        FeedbackManager.syncPending(applicationContext)
 
         setContent {
             InterruptOsTheme {
@@ -37,6 +39,10 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     clearHistory = DecisionStore::clear,
+                    initiallyOpenReview = intent.getBooleanExtra("open_review", false),
+                    submitFeedback = { decisionId, feedback ->
+                        FeedbackManager.submit(applicationContext, decisionId, feedback)
+                    },
                 )
             }
         }
@@ -48,4 +54,3 @@ class MainActivity : ComponentActivity() {
         return manager.isNotificationListenerAccessGranted(component)
     }
 }
-

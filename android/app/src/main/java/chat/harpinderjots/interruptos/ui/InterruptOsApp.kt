@@ -1,6 +1,5 @@
 package chat.harpinderjots.interruptos.ui
 
-import android.app.Activity
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.Image
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,35 +20,37 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -66,6 +67,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import chat.harpinderjots.interruptos.R
 import chat.harpinderjots.interruptos.data.DecisionAction
+import chat.harpinderjots.interruptos.data.DecisionFeedback
 import chat.harpinderjots.interruptos.data.DecisionRecord
 import chat.harpinderjots.interruptos.data.RulePreferences
 import chat.harpinderjots.interruptos.ui.theme.Amber
@@ -73,12 +75,14 @@ import chat.harpinderjots.interruptos.ui.theme.AmberSoft
 import chat.harpinderjots.interruptos.ui.theme.Brick
 import chat.harpinderjots.interruptos.ui.theme.Graphite
 import chat.harpinderjots.interruptos.ui.theme.Moss
+import chat.harpinderjots.interruptos.ui.theme.MossSoft
 import kotlinx.coroutines.flow.StateFlow
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-private enum class AppSection { TODAY, ACTIVITY, RULES }
+private enum class AppScreen { HOME, REVIEW, ACTIVITY, SETTINGS }
 
 @Composable
 fun InterruptOsApp(
@@ -87,6 +91,8 @@ fun InterruptOsApp(
     openNotificationAccess: () -> Unit,
     requestPostPermission: () -> Unit,
     clearHistory: () -> Unit,
+    initiallyOpenReview: Boolean,
+    submitFeedback: (String, DecisionFeedback) -> Unit,
 ) {
     var accessGranted by remember { mutableStateOf(hasNotificationAccess()) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -102,297 +108,386 @@ fun InterruptOsApp(
         Onboarding(openNotificationAccess)
     } else {
         LaunchedEffect(Unit) { requestPostPermission() }
-        MainShell(decisions, clearHistory)
+        MainShell(decisions, clearHistory, initiallyOpenReview, submitFeedback)
     }
 }
 
 @Composable
 private fun Onboarding(openNotificationAccess: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        LazyColumn(
-            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    BrandMark()
-                    Text("Interrupt OS", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 12.dp))
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BrandMark()
+                Text("Interrupt OS", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 11.dp))
             }
-            item {
+
+            Column {
                 Image(
                     painter = painterResource(R.drawable.onboarding_signal_filter),
                     contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(230.dp),
+                    modifier = Modifier.fillMaxWidth().height(170.dp),
                     contentScale = ContentScale.Fit,
                 )
-            }
-            item {
-                Text("Keep the interruptions that matter.", style = MaterialTheme.typography.displayMedium)
+                Text("Less noise.\nNothing important missed.", style = MaterialTheme.typography.displayMedium)
                 Text(
-                    "Interrupt OS checks attention-grabbing claims against current reality, then leaves the rest quiet.",
+                    "Interrupt OS checks selected notifications against what is happening now, then stays out of your way.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = 14.dp),
                 )
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PromiseRow(Icons.Outlined.CheckCircle, "Important alerts still get through")
-                    PromiseRow(Icons.Outlined.AutoAwesome, "Live evidence, not generic summaries")
-                    PromiseRow(Icons.Outlined.Shield, "You choose which kinds of alerts are protected")
-                }
-            }
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(24.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Column(Modifier.padding(20.dp)) {
-                        Text("Notification access", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Required to evaluate notifications and replace only the ones covered by your rules. Eligible content is securely processed by the Interrupt OS service.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
+                    TrustPill(Icons.Outlined.Shield, "You stay in control", Modifier.weight(1f))
+                    TrustPill(Icons.Outlined.NotificationsNone, "Quiet by default", Modifier.weight(1f))
                 }
             }
-            item {
+
+            Column {
+                Text(
+                    "Android will ask you to allow notification access. You can turn it off at any time.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 14.dp),
+                )
                 Button(
                     onClick = openNotificationAccess,
-                    modifier = Modifier.fillMaxWidth().height(58.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Graphite, contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = Moss, contentColor = Color.White),
                 ) {
-                    Text("Turn on protection")
+                    Text("Turn on Interrupt OS")
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainShell(decisionFlow: StateFlow<List<DecisionRecord>>, clearHistory: () -> Unit) {
-    var section by remember { mutableStateOf(AppSection.TODAY) }
+private fun MainShell(
+    decisionFlow: StateFlow<List<DecisionRecord>>,
+    clearHistory: () -> Unit,
+    initiallyOpenReview: Boolean,
+    submitFeedback: (String, DecisionFeedback) -> Unit,
+) {
+    var screen by rememberSaveable { mutableStateOf(if (initiallyOpenReview) AppScreen.REVIEW else AppScreen.HOME) }
+    var selectedDecision by remember { mutableStateOf<DecisionRecord?>(null) }
     val decisions by decisionFlow.collectAsState()
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                NavigationBarItem(
-                    selected = section == AppSection.TODAY,
-                    onClick = { section = AppSection.TODAY },
-                    icon = { Icon(Icons.Outlined.Home, null) },
-                    label = { Text("Today") },
-                    colors = navColors(),
-                )
-                NavigationBarItem(
-                    selected = section == AppSection.ACTIVITY,
-                    onClick = { section = AppSection.ACTIVITY },
-                    icon = { Icon(Icons.Outlined.History, null) },
-                    label = { Text("Activity") },
-                    colors = navColors(),
-                )
-                NavigationBarItem(
-                    selected = section == AppSection.RULES,
-                    onClick = { section = AppSection.RULES },
-                    icon = { Icon(Icons.Outlined.Tune, null) },
-                    label = { Text("Rules") },
-                    colors = navColors(),
-                )
-            }
-        },
-    ) { padding ->
-        when (section) {
-            AppSection.TODAY -> TodayScreen(decisions, Modifier.padding(padding))
-            AppSection.ACTIVITY -> ActivityScreen(decisions, clearHistory, Modifier.padding(padding))
-            AppSection.RULES -> RulesScreen(Modifier.padding(padding))
+
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+        when (screen) {
+            AppScreen.HOME -> HomeScreen(
+                decisions = decisions,
+                onOpenReview = { screen = AppScreen.REVIEW },
+                onOpenActivity = { screen = AppScreen.ACTIVITY },
+                onOpenSettings = { screen = AppScreen.SETTINGS },
+                onDecision = { selectedDecision = it },
+                modifier = Modifier.padding(padding),
+            )
+            AppScreen.REVIEW -> ReviewScreen(
+                decisions = decisions.filter { it.reviewRecommended && it.feedback == null },
+                onBack = { screen = AppScreen.HOME },
+                onDecision = { selectedDecision = it },
+                modifier = Modifier.padding(padding),
+            )
+            AppScreen.ACTIVITY -> ActivityScreen(
+                decisions = decisions,
+                clearHistory = clearHistory,
+                onBack = { screen = AppScreen.HOME },
+                onDecision = { selectedDecision = it },
+                modifier = Modifier.padding(padding),
+            )
+            AppScreen.SETTINGS -> SettingsScreen(
+                onBack = { screen = AppScreen.HOME },
+                modifier = Modifier.padding(padding),
+            )
         }
+    }
+
+    selectedDecision?.let { decision ->
+        DecisionSheet(
+            decision = decisions.firstOrNull { it.id == decision.id } ?: decision,
+            onDismiss = { selectedDecision = null },
+            onFeedback = { feedback -> submitFeedback(decision.id, feedback) },
+        )
     }
 }
 
 @Composable
-private fun TodayScreen(decisions: List<DecisionRecord>, modifier: Modifier = Modifier) {
-    val held = decisions.count { it.action == DecisionAction.HELD || it.action == DecisionAction.REPLACED_SILENT }
-    val delivered = decisions.count { it.action == DecisionAction.REPLACED_ALERTING }
+private fun HomeScreen(
+    decisions: List<DecisionRecord>,
+    onOpenReview: () -> Unit,
+    onOpenActivity: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onDecision: (DecisionRecord) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val today = decisions.filter { it.createdAt >= startOfToday() }
+    val quietCount = today.count { it.action == DecisionAction.HELD || it.action == DecisionAction.REPLACED_SILENT }
+    val reviewCount = decisions.count { it.reviewRecommended && it.feedback == null }
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
+        item { HomeHeader(onOpenSettings) }
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("TODAY", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Your attention, protected.", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 5.dp))
-                }
-                ProtectionPulse()
-            }
+            AmbientStatus(
+                title = if (reviewCount == 0) "Working quietly" else "A quick check would help",
+                subtitle = when {
+                    reviewCount > 0 -> if (reviewCount == 1) "One decision is unusually personal." else "$reviewCount decisions are unusually personal."
+                    today.isEmpty() -> "Nothing needs you."
+                    quietCount == 0 -> "${today.size} checked today. Nothing held back."
+                    else -> "${today.size} checked today · $quietCount kept quiet"
+                },
+                needsReview = reviewCount > 0,
+            )
         }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricCard(held.toString(), "held back", AmberSoft, Modifier.weight(1f))
-                MetricCard(delivered.toString(), "important", Color(0xFFDCE8DF), Modifier.weight(1f))
-            }
-        }
-        item {
-            StatusCard()
+        if (reviewCount > 0) {
+            item { ReviewInvitation(reviewCount, onOpenReview) }
         }
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Recent decisions", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                Text("${decisions.size} checked", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Recent", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                if (decisions.isNotEmpty()) TextButton(onClick = onOpenActivity) { Text("See all") }
             }
         }
         if (decisions.isEmpty()) {
-            item { EmptyActivity() }
+            item { EmptyRecent() }
         } else {
-            items(decisions.take(4), key = { it.id }) { DecisionCard(it) }
-        }
-    }
-}
-
-@Composable
-private fun ActivityScreen(decisions: List<DecisionRecord>, clearHistory: () -> Unit, modifier: Modifier = Modifier) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item {
-            Text("Activity", style = MaterialTheme.typography.displayMedium)
-            Text(
-                "A clear record of what was changed—and why.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 10.dp),
-            )
-        }
-        if (decisions.isEmpty()) item { EmptyActivity() }
-        items(decisions, key = { it.id }) { DecisionCard(it, expanded = true) }
-        if (decisions.isNotEmpty()) {
             item {
-                Text(
-                    "Clear activity",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Brick,
-                    modifier = Modifier.clickable(onClick = clearHistory).padding(vertical = 16.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RulesScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item {
-            Text("Rules", style = MaterialTheme.typography.displayMedium)
-            Text(
-                "Decide where Interrupt OS may step in.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 10.dp),
-            )
-        }
-        item { PersistentRuleRow("commerce", "Shopping and offers", "Verify relevance against current evidence") }
-        item { PersistentRuleRow("travel", "Flights and travel", "Escalate changes with real consequences") }
-        item { RuleRow("Other notifications", "Observed without changing delivery", false, null) }
-        item {
-            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                Column(Modifier.padding(20.dp)) {
-                    Text("System access", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Review notification access or revoke protection at any time.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp, bottom = 14.dp),
-                    )
-                    Text(
-                        "Open Android settings",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Amber,
-                        modifier = Modifier.clickable { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
-                    )
+                Card(
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    decisions.take(3).forEachIndexed { index, decision ->
+                        DecisionRow(decision) { onDecision(decision) }
+                        if (index < minOf(2, decisions.lastIndex)) {
+                            HorizontalDivider(Modifier.padding(start = 54.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
+                        }
+                    }
                 }
             }
         }
+        item {
+            Text(
+                "Interrupt OS only asks when your preference could change what it does next.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
+        }
     }
 }
 
 @Composable
-private fun DecisionCard(decision: DecisionRecord, expanded: Boolean = false) {
-    val (label, color) = when (decision.action) {
-        DecisionAction.HELD -> "HELD BACK" to Amber
-        DecisionAction.REPLACED_SILENT -> "QUIET" to Amber
-        DecisionAction.REPLACED_ALERTING -> "ACTION NEEDED" to Brick
-        DecisionAction.PRESERVED -> "DELIVERED" to Moss
-        DecisionAction.FAILED -> "UNCHANGED" to MaterialTheme.colorScheme.onSurfaceVariant
+private fun HomeHeader(onOpenSettings: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        BrandMark()
+        Text("Interrupt OS", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 11.dp).weight(1f))
+        IconButton(onClick = onOpenSettings) {
+            Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
+}
+
+@Composable
+private fun AmbientStatus(title: String, subtitle: String, needsReview: Boolean) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier.size(116.dp).clip(CircleShape).background(if (needsReview) AmberSoft else MossSoft),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier.size(68.dp).clip(CircleShape).background(if (needsReview) Amber else Moss),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (needsReview) Icons.Outlined.NotificationsNone else Icons.Outlined.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp),
+                )
+            }
+        }
+        Text(title, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
+        Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 7.dp))
+    }
+}
+
+@Composable
+private fun ReviewInvitation(count: Int, onClick: () -> Unit) {
     Card(
-        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = AmberSoft),
+    ) {
+        Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(42.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.65f)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Outlined.NotificationsNone, null, tint = Amber)
+            }
+            Column(Modifier.padding(start = 14.dp).weight(1f)) {
+                Text(if (count == 1) "Review one decision" else "Review $count decisions", style = MaterialTheme.typography.titleMedium)
+                Text("Your answer will shape similar choices.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun ReviewScreen(
+    decisions: List<DecisionRecord>,
+    onBack: () -> Unit,
+    onDecision: (DecisionRecord) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(22.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item { PageHeader("Review", onBack) }
+        item {
+            Text(
+                if (decisions.isEmpty()) "Nothing needs your input." else "Only decisions where your preference could meaningfully change the system appear here.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (decisions.isEmpty()) item { QuietState() }
+        else items(decisions, key = { it.id }) { decision -> ReviewCard(decision) { onDecision(decision) } }
+    }
+}
+
+@Composable
+private fun ReviewCard(decision: DecisionRecord, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(9.dp).clip(CircleShape).background(color))
-                Text(label, style = MaterialTheme.typography.labelMedium, color = color, modifier = Modifier.padding(start = 8.dp).weight(1f))
+                StatusDot(decision)
+                Text(decision.sourceLabel, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 9.dp).weight(1f))
                 Text(formatTime(decision.createdAt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(decision.sourceLabel, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 16.dp))
-            Text(decision.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
-            Text(decision.reason, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
-            if (expanded && decision.evidence.isNotEmpty()) {
-                HorizontalDivider(Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
-                decision.evidence.forEach { item ->
-                    Text(item.label, style = MaterialTheme.typography.labelMedium)
-                    Text(item.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp, bottom = 10.dp))
+            Text(decision.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 14.dp))
+            Text(decision.summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+            Text("Tap to answer", style = MaterialTheme.typography.labelLarge, color = Amber, modifier = Modifier.padding(top = 18.dp))
+        }
+    }
+}
+
+@Composable
+private fun ActivityScreen(
+    decisions: List<DecisionRecord>,
+    clearHistory: () -> Unit,
+    onBack: () -> Unit,
+    onDecision: (DecisionRecord) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 36.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item { PageHeader("Activity", onBack) }
+        if (decisions.isEmpty()) item { QuietState() }
+        else {
+            item {
+                Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    decisions.forEachIndexed { index, decision ->
+                        DecisionRow(decision) { onDecision(decision) }
+                        if (index != decisions.lastIndex) HorizontalDivider(Modifier.padding(start = 54.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
+                    }
                 }
-                Text("${(decision.confidence * 100).toInt()}% confidence · ${decision.latencyMs / 1000.0}s", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            item { TextButton(onClick = clearHistory, modifier = Modifier.fillMaxWidth()) { Text("Clear activity", color = Brick) } }
         }
     }
 }
 
 @Composable
-private fun StatusCard() {
-    Card(shape = RoundedCornerShape(26.dp), colors = CardDefaults.cardColors(containerColor = Graphite)) {
-        Row(Modifier.padding(22.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.NotificationsActive, null, tint = Color.White)
+private fun DecisionRow(decision: DecisionRecord, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StatusDot(decision)
+        Column(Modifier.padding(start = 14.dp).weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(decision.sourceLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(formatTime(decision.createdAt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Column(Modifier.padding(start = 16.dp).weight(1f)) {
-                Text("Protection is active", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                Text("Important categories always pass through.", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.68f), modifier = Modifier.padding(top = 3.dp))
-            }
+            Text(decision.title.ifBlank { decision.summary }, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
+            Text(decision.summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
         }
+        Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
 @Composable
-private fun EmptyActivity() {
-    Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Outlined.CheckCircle, null, tint = Moss, modifier = Modifier.size(30.dp))
-            Text("Everything is quiet", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 12.dp))
-            Text("New decisions will appear here with their evidence.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
-        }
+private fun StatusDot(decision: DecisionRecord) {
+    val color = when (decision.action) {
+        DecisionAction.HELD, DecisionAction.REPLACED_SILENT -> Amber
+        DecisionAction.REPLACED_ALERTING -> Brick
+        DecisionAction.PRESERVED -> Moss
+        DecisionAction.FAILED -> MaterialTheme.colorScheme.onSurfaceVariant
     }
+    Box(Modifier.size(10.dp).clip(CircleShape).background(color))
 }
 
 @Composable
-private fun MetricCard(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
-    Card(modifier, shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = color)) {
-        Column(Modifier.padding(20.dp)) {
-            Text(value, style = MaterialTheme.typography.displayMedium, color = Graphite)
-            Text(label, style = MaterialTheme.typography.labelLarge, color = Graphite.copy(alpha = 0.72f))
+private fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 36.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        item { PageHeader("Settings", onBack) }
+        item { Text("PROTECTED", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp)) }
+        item {
+            Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                PersistentRuleRow("commerce", "Shopping and offers", "Check claims against current results")
+                HorizontalDivider(Modifier.padding(start = 18.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
+                PersistentRuleRow("travel", "Flights and travel", "Surface changes that require action")
+            }
+        }
+        item { Text("SYSTEM", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 6.dp)) }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth().clickable { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Shield, null, tint = Moss)
+                    Column(Modifier.padding(start = 14.dp).weight(1f)) {
+                        Text("Notification access", style = MaterialTheme.typography.titleMedium)
+                        Text("On · Tap to manage in Android", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.outline)
+                }
+            }
+        }
+        item {
+            Text(
+                "Other notification categories pass through unchanged. Interrupt OS learns only from corrections you explicitly make.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
         }
     }
 }
@@ -401,56 +496,157 @@ private fun MetricCard(value: String, label: String, color: Color, modifier: Mod
 private fun PersistentRuleRow(domain: String, title: String, description: String) {
     val context = LocalContext.current
     var checked by remember(domain) { mutableStateOf(RulePreferences.isEnabled(context, domain)) }
-    RuleRow(title, description, checked) {
-        checked = it
-        RulePreferences.setEnabled(context, domain, it)
+    Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = {
+                checked = it
+                RulePreferences.setEnabled(context, domain, it)
+            },
+            modifier = Modifier.padding(start = 12.dp),
+        )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RuleRow(title: String, description: String, checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?) {
-    Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+private fun DecisionSheet(
+    decision: DecisionRecord,
+    onDismiss: () -> Unit,
+    onFeedback: (DecisionFeedback) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
+        LazyColumn(
+            contentPadding = PaddingValues(start = 22.dp, end = 22.dp, bottom = 34.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusDot(decision)
+                    Text(decision.sourceLabel, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 9.dp).weight(1f))
+                    Text(formatTime(decision.createdAt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.padding(start = 14.dp))
+            item {
+                Text(decision.title, style = MaterialTheme.typography.headlineMedium)
+                Text(decision.reason, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
+            }
+            if (decision.evidence.isNotEmpty()) {
+                item {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                    Text("WHAT IT CHECKED", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+                    decision.evidence.forEach { evidence ->
+                        Text(evidence.label, style = MaterialTheme.typography.labelLarge)
+                        Text(evidence.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp, bottom = 12.dp))
+                    }
+                }
+            }
+            item {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                if (decision.feedback == null) {
+                    Text("Was this the right call?", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
+                    Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FilledTonalButton(
+                            onClick = {
+                                onFeedback(DecisionFeedback.CORRECT)
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Yes") }
+                        Button(
+                            onClick = {
+                                onFeedback(oppositeFeedback(decision))
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1.4f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Graphite),
+                        ) { Text(oppositeLabel(decision)) }
+                    }
+                } else {
+                    Row(Modifier.padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.CheckCircle, null, tint = Moss)
+                        Text("Preference saved", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 10.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun oppositeFeedback(decision: DecisionRecord): DecisionFeedback = when (decision.action) {
+    DecisionAction.HELD, DecisionAction.REPLACED_SILENT -> DecisionFeedback.SHOULD_INTERRUPT
+    else -> DecisionFeedback.SHOULD_STAY_QUIET
+}
+
+private fun oppositeLabel(decision: DecisionRecord): String = when (decision.action) {
+    DecisionAction.HELD, DecisionAction.REPLACED_SILENT -> "Should alert"
+    else -> "Keep quiet"
+}
+
+@Composable
+private fun PageHeader(title: String, onBack: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
+        Text(title, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(start = 6.dp))
+    }
+}
+
+@Composable
+private fun EmptyRecent() {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(40.dp).clip(CircleShape).background(MossSoft), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.Check, null, tint = Moss)
+        }
+        Column(Modifier.padding(start = 14.dp)) {
+            Text("No decisions yet", style = MaterialTheme.typography.titleMedium)
+            Text("There is nothing to review.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-private fun PromiseRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(38.dp).clip(CircleShape).background(AmberSoft), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = Graphite, modifier = Modifier.size(19.dp))
+private fun QuietState() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 72.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.size(62.dp).clip(CircleShape).background(MossSoft), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.Check, null, tint = Moss, modifier = Modifier.size(28.dp))
         }
-        Text(text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 13.dp))
+        Text("All quiet", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp))
+    }
+}
+
+@Composable
+private fun TrustPill(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surface).padding(horizontal = 13.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = Moss, modifier = Modifier.size(19.dp))
+        Text(text, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
 @Composable
 private fun BrandMark() {
-    Box(Modifier.size(34.dp).clip(CircleShape).background(Graphite), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(12.dp).clip(CircleShape).background(Amber))
+    Box(Modifier.size(32.dp).clip(CircleShape).background(Graphite), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(11.dp).clip(CircleShape).background(MossSoft))
     }
 }
 
-@Composable
-private fun ProtectionPulse() {
-    Box(Modifier.size(52.dp).clip(CircleShape).background(AmberSoft), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(18.dp).clip(CircleShape).background(Amber))
-    }
-}
-
-@Composable
-private fun navColors() = NavigationBarItemDefaults.colors(
-    selectedIconColor = Graphite,
-    selectedTextColor = Graphite,
-    indicatorColor = AmberSoft,
-    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-)
+private fun startOfToday(): Long = Calendar.getInstance().apply {
+    set(Calendar.HOUR_OF_DAY, 0)
+    set(Calendar.MINUTE, 0)
+    set(Calendar.SECOND, 0)
+    set(Calendar.MILLISECOND, 0)
+}.timeInMillis
 
 private fun formatTime(epochMillis: Long): String = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(epochMillis))

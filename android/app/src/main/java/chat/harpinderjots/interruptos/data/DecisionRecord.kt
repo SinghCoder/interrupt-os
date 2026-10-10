@@ -8,6 +8,12 @@ enum class DecisionAction {
     FAILED,
 }
 
+enum class DecisionFeedback {
+    CORRECT,
+    SHOULD_INTERRUPT,
+    SHOULD_STAY_QUIET,
+}
+
 data class EvidenceItem(
     val label: String,
     val detail: String,
@@ -23,8 +29,12 @@ data class DecisionRecord(
     val body: String,
     val action: DecisionAction,
     val reason: String,
+    val summary: String,
     val confidence: Double,
     val createdAt: Long,
     val latencyMs: Long,
     val evidence: List<EvidenceItem>,
+    val reviewRecommended: Boolean = false,
+    val feedback: DecisionFeedback? = null,
+    val feedbackSynced: Boolean = false,
 )

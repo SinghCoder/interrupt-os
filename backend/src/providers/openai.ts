@@ -1,4 +1,4 @@
-import type { DecisionAction, EvidencePlan, NotificationEvent, NotificationDomain, RouteDecision } from "../types.js";
+import type { DecisionAction, EvidencePlan, FeedbackEvent, NotificationEvent, NotificationDomain, RouteDecision } from "../types.js";
 import type { SearchEvidence } from "./serpapi.js";
 
 function findOutputText(payload: unknown): string {
@@ -65,7 +65,8 @@ export async function judgeEvidence(
   event: NotificationEvent,
   route: RouteDecision,
   evidence: SearchEvidence,
-): Promise<{ action: DecisionAction; confidence: number; reason: string }> {
+  preferences: FeedbackEvent[] = [],
+): Promise<{ action: DecisionAction; confidence: number; reason: string; summary: string; reviewRecommended: boolean }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -85,10 +86,13 @@ export async function judgeEvidence(
             "Choose replace_silent when verified information is useful to retain but does not justify interrupting now.",
             "Choose replace_alerting only when current evidence supports a material, time-sensitive risk or opportunity that plausibly requires near-term action.",
             "Do not use fixed price or delay thresholds; reason from the scale, context, alternatives, and evidence quality.",
-            "Write a concise user-facing reason grounded only in supplied evidence.",
+            "Recent user corrections are preference examples, not hard rules. Generalize cautiously from semantically similar examples and never let them override clear safety or consequential time-sensitive risk.",
+            "Write reason as a concise audit explanation grounded only in supplied evidence.",
+            "Write summary as a calm, standalone sentence of at most 90 characters.",
+            "Set reviewRecommended only when an explicit correction would materially improve future personalization because this decision is unusually ambiguous or preference-dependent. Do not request review merely because confidence is imperfect.",
           ].join(" "),
         },
-        { role: "user", content: JSON.stringify({ notification: event, route, evidence }) },
+        { role: "user", content: JSON.stringify({ notification: event, route, evidence, recentUserCorrections: preferences }) },
       ],
       text: { format: { type: "json_schema", name: "attention_decision", strict: true, schema: {
         type: "object", additionalProperties: false,
@@ -96,11 +100,13 @@ export async function judgeEvidence(
           action: { type: "string", enum: ["preserve", "hold", "replace_silent", "replace_alerting"] },
           confidence: { type: "number", minimum: 0, maximum: 1 },
           reason: { type: "string", maxLength: 280 },
+          summary: { type: "string", maxLength: 90 },
+          reviewRecommended: { type: "boolean" },
         },
-        required: ["action", "confidence", "reason"],
+        required: ["action", "confidence", "reason", "summary", "reviewRecommended"],
       } } },
     }),
   });
   if (!response.ok) throw new Error(`OpenAI judgment returned ${response.status}`);
-  return JSON.parse(findOutputText(await response.json())) as { action: DecisionAction; confidence: number; reason: string };
+  return JSON.parse(findOutputText(await response.json())) as { action: DecisionAction; confidence: number; reason: string; summary: string; reviewRecommended: boolean };
 }

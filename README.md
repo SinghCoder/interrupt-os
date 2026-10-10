@@ -2,6 +2,8 @@
 
 Interrupt OS is an Android attention layer that evaluates whether incoming notifications deserve to interrupt the user. It combines user policy, semantic reasoning, and live external evidence before preserving, suppressing, or replacing a notification.
 
+The application is intentionally ambient: confident decisions happen without opening it, while unusually preference-dependent decisions can appear in a single quiet review recap. Explicit corrections are stored as short-lived, installation-scoped examples and supplied to later model judgments; they are not converted into fixed sender rules or price/delay thresholds.
+
 The project contains:
 
 - `android/`: the production Android application.
@@ -11,6 +13,8 @@ The project contains:
 - `design-assets/`: generated source artwork before Android optimization.
 
 No API credentials belong in the Android application or repository.
+
+The deployed backend uses API Gateway, Lambda, and a DynamoDB feedback table with a 90-day TTL. Installation tokens scope feedback history without requiring an account.
 
 Provider credentials remain in AWS Secrets Manager; Android installations receive a scoped signed token.
 

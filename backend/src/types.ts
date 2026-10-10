@@ -26,6 +26,8 @@ export interface DecisionResponse {
   domain: NotificationDomain;
   confidence: number;
   reason: string;
+  summary: string;
+  reviewRecommended: boolean;
   evidence: EvidenceItem[];
   latencyMs: number;
   expiresAt: string;
@@ -34,6 +36,22 @@ export interface DecisionResponse {
     planner?: string;
     search?: string;
   };
+}
+
+export type FeedbackCorrection = "correct" | "should_interrupt" | "should_stay_quiet";
+
+export interface FeedbackEvent {
+  feedbackId: string;
+  decisionId: string;
+  domain: NotificationDomain;
+  sourcePackage: string;
+  sourceLabel: string;
+  title: string;
+  body: string;
+  originalAction: DecisionAction;
+  reason: string;
+  correction: FeedbackCorrection;
+  createdAt: number;
 }
 
 export interface RouteDecision {
@@ -55,4 +73,3 @@ export interface EvidencePlan {
   delayMinutes: number | null;
   flightNumber: string | null;
 }
-

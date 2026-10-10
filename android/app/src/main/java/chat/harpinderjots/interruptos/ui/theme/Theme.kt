@@ -11,51 +11,52 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Graphite = Color(0xFF1B1B18)
-val InkMuted = Color(0xFF69675F)
-val Canvas = Color(0xFFF5F1E8)
-val SurfaceWarm = Color(0xFFFFFCF5)
-val Stone = Color(0xFFE7E1D6)
-val Amber = Color(0xFFE49A37)
-val AmberSoft = Color(0xFFF4DFC1)
-val Moss = Color(0xFF456A57)
-val Brick = Color(0xFF9A5142)
+val Graphite = Color(0xFF1D2420)
+val InkMuted = Color(0xFF68716B)
+val Canvas = Color(0xFFF3F5F1)
+val SurfaceWarm = Color(0xFFFBFCFA)
+val Stone = Color(0xFFE4E9E4)
+val Amber = Color(0xFF9A6A27)
+val AmberSoft = Color(0xFFF3E8D5)
+val Moss = Color(0xFF4D685A)
+val MossSoft = Color(0xFFDDE8E0)
+val Brick = Color(0xFF985549)
 
 private val LightColors = lightColorScheme(
-    primary = Graphite,
+    primary = Moss,
     onPrimary = SurfaceWarm,
-    secondary = Amber,
-    onSecondary = Graphite,
+    secondary = Graphite,
+    onSecondary = SurfaceWarm,
     background = Canvas,
     onBackground = Graphite,
     surface = SurfaceWarm,
     onSurface = Graphite,
     surfaceVariant = Stone,
     onSurfaceVariant = InkMuted,
-    outline = Color(0xFFC8C0B3),
+    outline = Color(0xFFC5CDC6),
     error = Brick,
 )
 
 private val DarkColors = darkColorScheme(
     primary = Color(0xFFF3EFE5),
     onPrimary = Graphite,
-    secondary = Color(0xFFF0B461),
-    background = Color(0xFF141412),
+    secondary = Color(0xFFD9E2DC),
+    background = Color(0xFF151916),
     onBackground = Color(0xFFF3EFE5),
-    surface = Color(0xFF1E1E1B),
+    surface = Color(0xFF1D221F),
     onSurface = Color(0xFFF3EFE5),
-    surfaceVariant = Color(0xFF2A2925),
+    surfaceVariant = Color(0xFF29302B),
     onSurfaceVariant = Color(0xFFC9C3B8),
-    outline = Color(0xFF5C5952),
+    outline = Color(0xFF59635C),
     error = Color(0xFFF0A595),
 )
 
 private val InterruptTypography = androidx.compose.material3.Typography(
-    displayLarge = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal, fontSize = 54.sp, lineHeight = 56.sp),
-    displayMedium = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal, fontSize = 42.sp, lineHeight = 44.sp),
-    headlineLarge = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal, fontSize = 34.sp, lineHeight = 38.sp),
-    headlineMedium = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal, fontSize = 28.sp, lineHeight = 32.sp),
-    titleLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp),
+    displayLarge = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal, fontSize = 44.sp, lineHeight = 47.sp),
+    displayMedium = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal, fontSize = 36.sp, lineHeight = 40.sp),
+    headlineLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 36.sp),
+    headlineMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 25.sp, lineHeight = 31.sp),
+    titleLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 19.sp, lineHeight = 25.sp),
     titleMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
     bodyLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
     bodyMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 21.sp),
@@ -71,4 +72,3 @@ fun InterruptOsTheme(content: @Composable () -> Unit) {
         content = content,
     )
 }
-
