@@ -10,6 +10,8 @@ fail open and arrive immediately.
 
 ![Interrupt OS product walkthrough](videos/interrupt-os-demo/renders/final-contact-sheet.jpg)
 
+[Watch the 83-second product walkthrough](https://youtu.be/aAxrcv7zvlo)
+
 Built for the **AI Agents** track of the SerpApi India Hackathon 2026.
 
 ## Why it exists

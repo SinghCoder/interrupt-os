@@ -53,7 +53,7 @@ No. Interrupt OS was created for this hackathon.
 ## Public links
 
 - Repository: https://github.com/SinghCoder/interrupt-os
-- Demo video: add the final YouTube URL after upload
+- Demo video: https://youtu.be/aAxrcv7zvlo
 
 ## Final checks
 
